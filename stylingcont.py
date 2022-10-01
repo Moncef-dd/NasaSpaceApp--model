@@ -79,3 +79,17 @@ def preprocess_image(image):
     image = tf.keras.applications.vgg19.preprocess_input(image)
 
     return image
+
+style_layers = [
+    "block1_conv1",
+    "block2_conv1",
+    "block3_conv1",
+    "block4_conv1",
+    "block5_conv1",
+]
+
+content_layers = ["block5_conv2"]
+output_layers = style_layers + content_layers
+
+NUM_CONTENT_LAYERS = len(content_layers)
+NUM_STYLE_LAYERS = len(style_layers)
