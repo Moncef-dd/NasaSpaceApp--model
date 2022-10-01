@@ -17,6 +17,7 @@ def tensor_to_image(tensor):
 
 
 def load_img(path_to_img):
+    
     """loads an image as a tensor and scales it to 512 pixels"""
     max_dim = 512
     image = tf.io.read_file(path_to_img)
@@ -93,3 +94,21 @@ output_layers = style_layers + content_layers
 
 NUM_CONTENT_LAYERS = len(content_layers)
 NUM_STYLE_LAYERS = len(style_layers)
+
+def nst_model(layer_names):
+    """Creates a vgg model that outputs the style and content layer activations.
+
+    Args:
+      layer_names: a list of strings, representing the names of the desired content and style layers
+
+    Returns:
+      A model that takes the regular vgg19 input and outputs just the content and style layers.
+
+    """
+    vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights="imagenet")
+    vgg.trainable = False
+    outputs = [vgg.get_layer(name).output for name in layer_names]
+    model = tf.keras.Model(inputs=vgg.input, outputs=outputs)
+
+    return model
+
