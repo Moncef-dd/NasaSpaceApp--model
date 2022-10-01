@@ -201,7 +201,7 @@ def get_style_content_loss(
 
     return total_loss
 
- def get_style_image_features(image, model):
+def get_style_image_features(image, model):
     """Get the style image features
 
     Args:
@@ -378,3 +378,24 @@ def fit_style_transfer(
     generated_image = tf.cast(generated_image, dtype=tf.uint8)
 
     return generated_image, images  
+
+style_weight = 1e-4
+content_weight = 1e-32
+var_weight = 1e-2
+
+adam = tf.optimizers.Adam(
+    tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=3.0, decay_steps=10, decay_rate=0.90
+    )
+)
+
+# stylized_image_reg, display_images_reg = fit_style_transfer(
+#     style_image=style_image,
+#     content_image=content_image,
+#     style_weight=style_weight,
+#     content_weight=content_weight,
+#     var_weight=var_weight,
+#     optimizer=adam,
+#     epochs=2,
+#     steps_per_epoch=10,
+# )
