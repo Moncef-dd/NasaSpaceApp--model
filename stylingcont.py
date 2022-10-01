@@ -231,3 +231,61 @@ def get_content_image_features(image, model):
     outputs = model(preprocessed_content_image)
     content_outputs = outputs[NUM_STYLE_LAYERS:]
     return content_outputs   
+
+
+#    def update_image_with_style(
+#     image,
+#     style_targets,
+#     content_targets,
+#     style_weight,
+#     var_weight,
+#     content_weight,
+#     optimizer,
+# ):
+#     """
+#     Args:
+#       image: generated image
+#       style_targets: style features of the style image
+#       content_targets: content features of the content image
+#       style_weight: weight given to the style loss
+#       content_weight: weight given to the content loss
+#       var_weight: weight given to the total variation loss
+#       optimizer: optimizer for updating the input image
+#     """
+#     gradients = calculate_gradients(
+#         image, style_targets, content_targets, style_weight, content_weight, var_weight
+#     )
+#     optimizer.apply_gradients([(gradients, image)])
+#     image.assign(clip_image_values(image, min_value=0.0, max_value=255.0)) 
+
+
+def calculate_gradients(
+    image, style_targets, content_targets, style_weight, content_weight, var_weight
+):
+    """Calculate the gradients of the loss with respect to the generated image
+    Args:
+      image: generated image
+      style_targets: style features of the style image
+      content_targets: content features of the content image
+      style_weight: weight given to the style loss
+      content_weight: weight given to the content loss
+      var_weight: weight given to the total variation loss
+
+    Returns:
+      gradients: gradients of the loss with respect to the input image
+    """
+    with tf.GradientTape() as tape:
+        style_features = get_style_image_features(image, model)
+        content_features = get_content_image_features(image, model)
+        loss = get_style_content_loss(
+            style_targets,
+            style_features,
+            content_targets,
+            content_features,
+            style_weight,
+            content_weight,
+        )
+        loss += var_weight * tf.image.total_variation(image)
+    gradients = tape.gradient(loss, image)
+
+    return gradients  
