@@ -288,4 +288,93 @@ def calculate_gradients(
         loss += var_weight * tf.image.total_variation(image)
     gradients = tape.gradient(loss, image)
 
-    return gradients  
+    return gradients
+
+def update_image_with_style(
+    image,
+    style_targets,
+    content_targets,
+    style_weight,
+    var_weight,
+    content_weight,
+    optimizer,
+):
+    """
+    Args:
+      image: generated image
+      style_targets: style features of the style image
+      content_targets: content features of the content image
+      style_weight: weight given to the style loss
+      content_weight: weight given to the content loss
+      var_weight: weight given to the total variation loss
+      optimizer: optimizer for updating the input image
+    """
+    gradients = calculate_gradients(
+        image, style_targets, content_targets, style_weight, content_weight, var_weight
+    )
+    optimizer.apply_gradients([(gradients, image)])
+    image.assign(clip_image_values(image, min_value=0.0, max_value=255.0))
+
+
+def fit_style_transfer(
+    style_image,
+    content_image,
+    style_weight=1e-2,
+    content_weight=1e-4,
+    var_weight=0,
+    optimizer="adam",
+    epochs=1,
+    steps_per_epoch=1,
+):
+    """Performs neural style transfer.
+    Args:
+      style_image: image to get style features from
+      content_image: image to stylize
+      style_targets: style features of the style image
+      content_targets: content features of the content image
+      style_weight: weight given to the style loss
+      content_weight: weight given to the content loss
+      var_weight: weight given to the total variation loss
+      optimizer: optimizer for updating the input image
+      epochs: number of epochs
+      steps_per_epoch = steps per epoch
+
+    Returns:
+      generated_image: generated image at final epoch
+      images: collection of generated images per epoch
+    """
+
+    images = []
+    step = 0
+    style_targets = get_style_image_features(style_image, model)
+    content_targets = get_content_image_features(content_image, model)
+    generated_image = tf.cast(content_image, dtype=tf.float32)
+    generated_image = tf.Variable(generated_image)
+    images.append(content_image)
+    for n in range(epochs):
+        for m in range(steps_per_epoch):
+            step += 1
+            update_image_with_style(
+                generated_image,
+                style_targets,
+                content_targets,
+                style_weight,
+                content_weight,
+                var_weight,
+                optimizer,
+            )
+
+            print("step number",m ,"in epoch",n)
+
+            if (m + 1) % 10 == 0:
+                images.append(generated_image)
+
+        clear_output(wait=True)
+        display_image = tensor_to_image(generated_image)
+        display_fn(display_image)
+
+        images.append(generated_image)
+        print("Train step: {}".format(step))
+    generated_image = tf.cast(generated_image, dtype=tf.uint8)
+
+    return generated_image, images  
